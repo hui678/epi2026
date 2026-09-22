@@ -366,7 +366,12 @@
     </main>
 
     <script>
-        // 可选时间段：id/标签/名额必须与服务端 api/../lib/slots.js 保持一致
+        // 云函数访问地址（CloudBase 部署后在 HTTP 网关处获取，不带末尾斜杠）
+        // 形如：https://epi2026-xxxx.ap-shanghai.app.tcloudbase.com
+        // 本地直接打开 html 测试时也填完整地址；页面与函数同域部署时可留空
+        const API_BASE = '';
+
+        // 可选时间段：id/标签/名额必须与云函数 cloudbase/epi-api/index.js 保持一致
         const TIME_SLOTS = [
             { id: 'sat-am', label: '周六上午 9:00 - 11:00', capacity: 10 },
             { id: 'sat-pm', label: '周六下午 14:00 - 16:00', capacity: 10 },
@@ -406,7 +411,7 @@
         // 拉取各时段已约人数（服务端只返回聚合计数，不含任何学生信息）
         async function loadCounts() {
             try {
-                const resp = await fetch('/api/counts');
+                const resp = await fetch(API_BASE + '/api/counts');
                 const data = await resp.json();
                 if (data.ok) {
                     slotCounts = data.counts || {};
@@ -475,7 +480,7 @@
             btn.textContent = '提交中...';
 
             try {
-                const resp = await fetch('/api/book', {
+                const resp = await fetch(API_BASE + '/api/book', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

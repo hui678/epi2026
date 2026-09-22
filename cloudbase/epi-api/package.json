@@ -1,0 +1,6 @@
+{
+  "name": "epi-api",
+  "version": "1.0.0",
+  "description": "EPI 一面预约 HTTP 云函数（零第三方依赖）",
+  "main": "index.js"
+}
