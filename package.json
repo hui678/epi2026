@@ -1,7 +1,0 @@
-{
-  "name": "epi-interview-booking",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "description": "EPI 实验室一面预约页面（Vercel Serverless + 飞书多维表格）"
-}

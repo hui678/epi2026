@@ -1,7 +1,11 @@
 // POST /api/book —— 提交预约（服务端完成全部校验，前端校验仅为体验）
-import { searchRecords, createRecord, FeishuError } from '../lib/feishu.js';
+import { createFeishu, FeishuError } from '../lib/feishu.js';
 import { SLOTS } from '../lib/slots.js';
-import { CORS_HEADERS, sendJson, readJsonBody } from '../lib/http.js';
+import { CORS_HEADERS, jsonResponse } from '../lib/http.js';
+
+export function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
 
 function clean(value, maxLen) {
   if (typeof value !== 'string') return '';
@@ -9,20 +13,12 @@ function clean(value, maxLen) {
   return text.length > maxLen ? text.slice(0, maxLen) : text;
 }
 
-export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204, CORS_HEADERS);
-    return res.end();
-  }
-  if (req.method !== 'POST') {
-    return sendJson(res, 405, { ok: false, message: '只支持 POST 请求' });
-  }
-
+export async function onRequestPost({ request, env }) {
   let body;
   try {
-    body = await readJsonBody(req);
+    body = await request.json();
   } catch {
-    return sendJson(res, 400, { ok: false, message: '请求格式错误' });
+    return jsonResponse(400, { ok: false, message: '请求格式错误' });
   }
 
   // 1. 服务端校验（不信任前端）
@@ -32,26 +28,28 @@ export default async function handler(req, res) {
   const slotId = clean(body.slot, 20);
 
   if (!/^\d{10}$/.test(studentId)) {
-    return sendJson(res, 400, { ok: false, field: 'studentId', message: '学号必须为 10 位数字' });
+    return jsonResponse(400, { ok: false, field: 'studentId', message: '学号必须为 10 位数字' });
   }
   if (!name) {
-    return sendJson(res, 400, { ok: false, field: 'name', message: '请输入姓名' });
+    return jsonResponse(400, { ok: false, field: 'name', message: '请输入姓名' });
   }
   if (!className) {
-    return sendJson(res, 400, { ok: false, field: 'className', message: '请输入班级' });
+    return jsonResponse(400, { ok: false, field: 'className', message: '请输入班级' });
   }
   const slot = SLOTS[slotId];
   if (!slot) {
-    return sendJson(res, 400, { ok: false, field: 'slot', message: '面试时间不合法' });
+    return jsonResponse(400, { ok: false, field: 'slot', message: '面试时间不合法' });
   }
 
   try {
+    const feishu = createFeishu(env);
+
     // 2. 学号查重
-    const dup = await searchRecords([
+    const dup = await feishu.searchRecords([
       { field_name: '学号', operator: 'is', value: [studentId] },
     ]);
     if (dup.total > 0) {
-      return sendJson(res, 409, {
+      return jsonResponse(409, {
         ok: false,
         code: 'DUPLICATE_STUDENT',
         message: '该学号已预约过，无需重复提交。如需修改请联系管理员。',
@@ -59,11 +57,11 @@ export default async function handler(req, res) {
     }
 
     // 3. 名额校验（服务端权威校验）
-    const booked = await searchRecords([
+    const booked = await feishu.searchRecords([
       { field_name: '面试时间', operator: 'is', value: [slot.label] },
     ]);
     if (booked.total >= slot.capacity) {
-      return sendJson(res, 409, {
+      return jsonResponse(409, {
         ok: false,
         code: 'SLOT_FULL',
         message: '该时间段已约满，请选择其他时间。',
@@ -71,19 +69,19 @@ export default async function handler(req, res) {
     }
 
     // 4. 写入飞书多维表格（单选字段直接传选项名字符串）
-    await createRecord({
+    await feishu.createRecord({
       学号: studentId,
       姓名: name,
       班级: className,
       面试时间: slot.label,
     });
 
-    return sendJson(res, 200, { ok: true, slot: { id: slotId, label: slot.label } });
+    return jsonResponse(200, { ok: true, slot: { id: slotId, label: slot.label } });
   } catch (err) {
-    console.error('book 接口异常：', err);
+    console.error('book 函数异常：', err);
     if (err instanceof FeishuError) {
-      return sendJson(res, err.status, { ok: false, message: err.message });
+      return jsonResponse(err.status, { ok: false, message: err.message });
     }
-    return sendJson(res, 502, { ok: false, message: '预约失败，请稍后重试或联系管理员' });
+    return jsonResponse(502, { ok: false, message: '预约失败，请稍后重试或联系管理员' });
   }
 }
