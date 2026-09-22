@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实验室一面预约</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #dc2626;
+            --success: #16a34a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+            color: #fff;
+            padding: 64px 24px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 32px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .hero p {
+            font-size: 16px;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .intro {
+            padding: 56px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 32px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
+        }
+
+        .card .icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 14px;
+        }
+
+        .card h3 {
+            font-size: 17px;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .booking {
+            padding: 32px 0 64px;
+        }
+
+        .form-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group label .required {
+            color: var(--danger);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            background: #fff;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .form-control.error {
+            border-color: var(--danger);
+        }
+
+        .field-error {
+            color: var(--danger);
+            font-size: 13px;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .field-error.show {
+            display: block;
+        }
+
+        .slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .slot {
+            position: relative;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: #fff;
+        }
+
+        .slot:hover:not(.disabled) {
+            border-color: var(--primary);
+        }
+
+        .slot input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .slot .label {
+            font-size: 14px;
+            font-weight: 600;
+            display: block;
+        }
+
+        .slot .count {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .slot.selected {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .slot.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f1f5f9;
+        }
+
+        .slot.full .count {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            margin-top: 8px;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: var(--primary-dark);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .note {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .hero {
+                padding: 48px 20px;
+            }
+
+            .hero h1 {
+                font-size: 26px;
+            }
+
+            .form-card {
+                padding: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="hero">
+        <h1>实验室一面预约</h1>
+        <p>填写下方信息预约你的面试时间，我们期待与你相遇。</p>
+    </header>
+
+    <main class="container">
+        <section class="intro">
+            <h2 class="section-title">关于实验室</h2>
+            <p class="section-subtitle">在这里，你将与一群热爱技术的人一起成长</p>
+            <div class="grid">
+                <div class="card">
+                    <div class="icon">💻</div>
+                    <h3>前端工程</h3>
+                    <p>React / Vue 工程化实践，从组件设计到性能优化，打造现代化 Web 体验。</p>
+                </div>
+                <div class="card">
+                    <div class="icon">⚙️</div>
+                    <h3>后端服务</h3>
+                    <p>Node / Go 服务端开发，数据库设计、API 架构与高并发处理实战。</p>
+                </div>
+                <div class="card">
+                    <div class="icon">🤖</div>
+                    <h3>AI 应用</h3>
+                    <p>大模型应用开发，Prompt 工程、RAG 检索增强与 Agent 编排落地。</p>
+                </div>
+                <div class="card">
+                    <div class="icon">🎨</div>
+                    <h3>产品设计</h3>
+                    <p>从需求洞察到交互原型，用设计思维打磨每一个细节与体验。</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="booking">
+            <h2 class="section-title">预约面试</h2>
+            <p class="section-subtitle">请如实填写信息，每个学号仅可预约一次</p>
+            <div class="form-card">
+                <div id="message" class="message"></div>
+                <form id="bookingForm" novalidate>
+                    <div class="form-group">
+                        <label>学号 <span class="required">*</span></label>
+                        <input type="text" id="studentId" class="form-control" placeholder="请输入学号（10位数字）" maxlength="10"
+                            inputmode="numeric" pattern="\d{10}">
+                        <div id="studentIdError" class="field-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>姓名 <span class="required">*</span></label>
+                        <input type="text" id="name" class="form-control" placeholder="请输入姓名" maxlength="20">
+                        <div id="nameError" class="field-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>班级 <span class="required">*</span></label>
+                        <input type="text" id="className" class="form-control" placeholder="如：计算机2301" maxlength="30">
+                        <div id="classNameError" class="field-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>面试时间 <span class="required">*</span></label>
+                        <div id="slots" class="slots"></div>
+                        <div id="slotError" class="field-error"></div>
+                    </div>
+                    <button type="submit" id="submitBtn" class="btn">提交预约</button>
+                </form>
+                <p class="note">提交即表示你已确认信息真实有效</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 可选时间段：id/标签/名额必须与服务端 api/../lib/slots.js 保持一致
+        const TIME_SLOTS = [
+            { id: 'sat-am', label: '周六上午 9:00 - 11:00', capacity: 10 },
+            { id: 'sat-pm', label: '周六下午 14:00 - 16:00', capacity: 10 },
+            { id: 'sun-am', label: '周日上午 9:00 - 11:00', capacity: 10 },
+            { id: 'sun-pm', label: '周日下午 14:00 - 16:00', capacity: 10 },
+        ];
+
+        let selectedSlot = null;
+        let slotCounts = {};
+
+        function renderSlots() {
+            const container = document.getElementById('slots');
+            container.innerHTML = '';
+            TIME_SLOTS.forEach(slot => {
+                const count = slotCounts[slot.id] || 0;
+                const isFull = count >= slot.capacity;
+                const el = document.createElement('label');
+                el.className = 'slot' + (isFull ? ' disabled full' : '');
+                el.innerHTML = `
+          <input type="radio" name="slot" value="${slot.id}" ${isFull ? 'disabled' : ''}>
+          <span class="label">${slot.label}</span>
+          <span class="count">已约 ${count}/${slot.capacity}${isFull ? '（已满）' : ''}</span>
+        `;
+                const input = el.querySelector('input');
+                input.addEventListener('change', () => {
+                    if (input.checked) {
+                        selectedSlot = slot.id;
+                        document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+                        el.classList.add('selected');
+                        hideError('slotError');
+                    }
+                });
+                container.appendChild(el);
+            });
+        }
+
+        // 拉取各时段已约人数（服务端只返回聚合计数，不含任何学生信息）
+        async function loadCounts() {
+            try {
+                const resp = await fetch('/api/counts');
+                const data = await resp.json();
+                if (data.ok) {
+                    slotCounts = data.counts || {};
+                    renderSlots();
+                } else {
+                    console.warn('加载已约人数失败：', data.message);
+                }
+            } catch (e) {
+                console.warn('加载已约人数失败：', e.message);
+            }
+        }
+
+        function validate() {
+            let ok = true;
+            const sid = document.getElementById('studentId').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const cls = document.getElementById('className').value.trim();
+
+            if (!sid) { showError('studentIdError', 'studentId', '请输入学号'); ok = false; }
+            else if (!/^\d{10}$/.test(sid)) { showError('studentIdError', 'studentId', '学号必须为 10 位数字'); ok = false; }
+            else hideError('studentIdError');
+
+            if (!name) { showError('nameError', 'name', '请输入姓名'); ok = false; }
+            else hideError('nameError');
+
+            if (!cls) { showError('classNameError', 'className', '请输入班级'); ok = false; }
+            else hideError('classNameError');
+
+            if (!selectedSlot) { showError('slotError', null, '请选择面试时间'); ok = false; }
+            else hideError('slotError');
+
+            return ok ? { sid, name, cls } : null;
+        }
+
+        function showError(errId, inputId, msg) {
+            const el = document.getElementById(errId);
+            el.textContent = msg;
+            el.classList.add('show');
+            if (inputId) document.getElementById(inputId).classList.add('error');
+        }
+        function hideError(errId) {
+            const el = document.getElementById(errId);
+            el.classList.remove('show');
+            const inputId = errId.replace('Error', '');
+            const input = document.getElementById(inputId);
+            if (input) input.classList.remove('error');
+        }
+        function showMessage(type, msg) {
+            const el = document.getElementById('message');
+            el.className = 'message ' + type + ' show';
+            el.textContent = msg;
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        function hideMessage() {
+            document.getElementById('message').classList.remove('show');
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            hideMessage();
+            const values = validate();
+            if (!values) return;
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+
+            try {
+                const resp = await fetch('/api/book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        studentId: values.sid,
+                        name: values.name,
+                        className: values.cls,
+                        slot: selectedSlot,
+                    }),
+                });
+                const data = await resp.json();
+
+                if (!data.ok) {
+                    // 字段级错误高亮到对应输入框，其余错误顶部提示
+                    if (data.field === 'studentId') showError('studentIdError', 'studentId', data.message);
+                    else if (data.field === 'name') showError('nameError', 'name', data.message);
+                    else if (data.field === 'className') showError('classNameError', 'className', data.message);
+                    else if (data.field === 'slot') showError('slotError', null, data.message);
+                    else showMessage('error', data.message || '提交失败，请稍后重试');
+
+                    if (data.code === 'SLOT_FULL') await loadCounts();
+                    return;
+                }
+
+                showMessage('success', `预约成功！请记住你的时间：${data.slot.label}。期待与你见面。`);
+                document.getElementById('bookingForm').reset();
+                document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+                selectedSlot = null;
+                await loadCounts();
+            } catch (err) {
+                console.error(err);
+                showMessage('error', '网络异常，请检查网络后重试');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '提交预约';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSlots();
+            document.getElementById('bookingForm').addEventListener('submit', handleSubmit);
+            loadCounts();
+        });
+    </script>
+</body>
+
+</html>
